@@ -34,9 +34,7 @@ namespace HotelBooking.Web.Controllers
             }
             if (ModelState.IsValid)
             {
-                //_db.Villas.Add(obj);
                 _villaRepository.Add(obj);
-                //_db.SaveChanges();
                 _villaRepository.Save();
                 TempData["success"] = "The villa has been created successfully.";
                 return RedirectToAction(nameof(Index));
@@ -64,6 +62,7 @@ namespace HotelBooking.Web.Controllers
             {
                 _villaRepository.Update(obj);
                 _villaRepository.Save();
+                TempData["success"] = "The villa has been updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
             return View();
