@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace HotelBooking.Domain.Entities
 {
@@ -18,7 +20,10 @@ namespace HotelBooking.Domain.Entities
         public double Price { get; set; }
         public int Sqft { get; set; }
         [Range(1,10)]
+       
         public int Occupancy { get; set; }
+        [NotMapped]
+        public IFormFile? Image { get; set; }
         [Display(Name = "Image Url")]
         public string? ImageUrl { get; set; }
         public DateTime? Created_Date { get; set; }

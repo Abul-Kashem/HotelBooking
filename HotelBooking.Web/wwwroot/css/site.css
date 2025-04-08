@@ -20,3 +20,10 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.villa-image img {
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #bbb9b9;
+    margin-top: 20px;
+}

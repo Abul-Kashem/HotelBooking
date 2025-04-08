@@ -1,6 +1,7 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Data;
+using HotelBooking.Infrastructure.Repository;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelBooking.Web.Controllers
@@ -8,16 +9,18 @@ namespace HotelBooking.Web.Controllers
 
     public class VillaController : Controller
     {
-        private readonly IVillaRepository _villaRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public VillaController(IVillaRepository villaRepository)
+        public VillaController(IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
         {
-            _villaRepository = villaRepository;
+            _unitOfWork = unitOfWork;
+            _webHostEnvironment = webHostEnvironment;
+
         }
         public IActionResult Index()
         {
-            //var villas = _db.Villas.ToList();
-            var villas = _villaRepository.GetAll(); 
+            var villas = _unitOfWork.Villa.GetAll();
 
             return View(villas);
         }
@@ -28,14 +31,30 @@ namespace HotelBooking.Web.Controllers
         [HttpPost]
         public IActionResult Create(Villa obj)
         {
-            if(obj.Name == obj.Description)
+            if (obj.Name == obj.Description)
             {
                 ModelState.AddModelError("name", "The description cannot exactly match the Name");
             }
             if (ModelState.IsValid)
             {
-                _villaRepository.Add(obj);
-                _villaRepository.Save();
+                if (obj.Image != null)
+                {
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(obj.Image.FileName);
+                    string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\VillaImages");
+
+                    using var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create);
+                    obj.Image.CopyTo(fileStream);
+
+                    obj.ImageUrl = @"\images\VillaImages\" + fileName;
+                }
+                else
+                {
+                    obj.ImageUrl = "https://placehold.co/600x400";
+                }
+
+
+                _unitOfWork.Villa.Add(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been created successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -43,12 +62,9 @@ namespace HotelBooking.Web.Controllers
         }
         public IActionResult Update(int villaId)
         {
-            //Villa? obj = _db.Villas.FirstOrDefault(u => u.Id == villaId);
-            Villa? obj = _villaRepository.Get(u=>u.Id == villaId);
+            Villa? obj = _unitOfWork.Villa.Get(u => u.Id == villaId);
 
-            //var VillaList = _db.Villas.Where(u => u.Price > 50 && u.Occupancy > 0);
-
-            if(obj == null)
+            if (obj == null)
             {
                 return RedirectToAction("Error", "Home");
             }
@@ -60,8 +76,30 @@ namespace HotelBooking.Web.Controllers
         {
             if (ModelState.IsValid && obj.Id > 0)
             {
-                _villaRepository.Update(obj);
-                _villaRepository.Save();
+
+                if (obj.Image != null)
+                {
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(obj.Image.FileName);
+                    string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\VillaImages");
+
+                    if (!string.IsNullOrEmpty(obj.ImageUrl))
+                    {
+                        var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, obj.ImageUrl.TrimStart('\\'));
+
+                        if (System.IO.File.Exists(oldImagePath))
+                        {
+                            System.IO.File.Delete(oldImagePath);
+                        }
+                    }
+
+                    using var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create);
+                    obj.Image.CopyTo(fileStream);
+
+                    obj.ImageUrl = @"\images\VillaImages\" + fileName;
+                }
+
+                _unitOfWork.Villa.Update(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -70,9 +108,7 @@ namespace HotelBooking.Web.Controllers
 
         public IActionResult Delete(int villaId)
         {
-            Villa? obj =_villaRepository.Get(u => u.Id == villaId);
-
-            //var VillaList = _db.Villas.Where(u => u.Price > 50 && u.Occupancy > 0);
+            Villa? obj = _unitOfWork.Villa.Get(u => u.Id == villaId);
 
             if (obj is null)
             {
@@ -84,13 +120,23 @@ namespace HotelBooking.Web.Controllers
         [HttpPost]
         public IActionResult Delete(Villa obj)
         {
-            Villa? objFromDb = _villaRepository.Get(u => u.Id == obj.Id);
+            Villa? objFromDb = _unitOfWork.Villa.Get(u => u.Id == obj.Id);
 
             if (objFromDb is not null)
             {
-                _villaRepository.Remove(objFromDb);
-                _villaRepository.Save();
-                TempData["success"] = "The villa has been deleted successfully.";
+                if (!string.IsNullOrEmpty(objFromDb.ImageUrl))
+                {
+                    var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, objFromDb.ImageUrl.TrimStart('\\'));
+
+                    if (System.IO.File.Exists(oldImagePath))
+                    {
+                        System.IO.File.Delete(oldImagePath);
+                    }
+                }
+
+                _unitOfWork.Villa.Remove(objFromDb);
+                _unitOfWork.Save();
+                TempData["error"] = "The villa has been deleted successfully.";
                 return RedirectToAction(nameof(Index));
             }
             TempData["error"] = "The villa could not be deleted.";
