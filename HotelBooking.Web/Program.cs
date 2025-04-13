@@ -1,4 +1,5 @@
 using HotelBooking.Application.Common.Interfaces;
+using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Data;
 using HotelBooking.Infrastructure.Repository;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+
 builder.Services.AddScoped<IUnitOfWork,UnitOfWork>();
 var app = builder.Build();
 
