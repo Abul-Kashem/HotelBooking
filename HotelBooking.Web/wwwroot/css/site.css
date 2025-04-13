@@ -27,3 +27,8 @@ body {
     border: 1px solid #bbb9b9;
     margin-top: 20px;
 }
+
+.villa-img{
+    width:200px;
+    height:200px;
+}
